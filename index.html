@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G-COACH - Reliable Bus Services | Garissa-Nairobi Route</title>
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- Lord Icons -->
+    <script src="https://cdn.lordicon.com/lordicon.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #2ecc71;
+            --secondary-green: #27ae60;
+            --gradient-start: #2ecc71;
+            --gradient-middle: #27ae60;
+            --gradient-end: #3498db;
+            --white: #ffffff;
+            --black: #333333;
+            --light-gray: #f4f7f6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle), var(--gradient-end));
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--black);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .navbar {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .navbar .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            color: var(--white);
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--secondary-green);
+        }
+
+        header {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            color: var(--white);
+            text-align: center;
+            padding: 100px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        header h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--white);
+        }
+
+        .section-card {
+            background: rgba(255,255,255,0.9);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .btn {
+            display: inline-block;
+            background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+            color: var(--white);
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(0,0,0,0.15);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input, 
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .benefit-card {
+            background: var(--white);
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .benefit-card i {
+            font-size: 3rem;
+            color: var(--primary-green);
+            margin-bottom: 15px;
+        }
+
+        .routes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .route-card {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        footer {
+            background: rgba(255,255,255,0.1);
+            color: var(--white);
+            padding: 30px 0;
+            margin-top: auto;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 15px;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 10px;
+        }
+
+        .footer-section a {
+            color: var(--white);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: var(--secondary-green);
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+        }
+
+        /* Mobile Menu Styles */
+        .mobile-menu-toggle {
+            display: none;
+            cursor: pointer;
+            flex-direction: column;
+        }
+
+        .mobile-menu-toggle .bar {
+            width: 25px;
+            height: 3px;
+            background-color: var(--white);
+            margin: 3px 0;
+            transition: 0.4s;
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(46, 204, 113, 0.95);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .mobile-menu a {
+            color: var(--white);
+            text-decoration: none;
+            font-size: 1.5rem;
+            margin: 15px 0;
+            transition: color 0.3s ease;
+        }
+
+        .mobile-menu a:hover {
+            color: var(--secondary-green);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="#" class="logo">G-COACH</a>
+            <div class="nav-links">
+                <a href="#home">Home</a>
+                <a href="#booking">Book Ticket</a>
+                <a href="#routes">Routes</a>
+                <a href="#services">Services</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="mobile-menu-toggle">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu">
+        <a href="#home">Home</a>
+        <a href="#booking">Book Ticket</a>
+        <a href="#routes">Routes</a>
+        <a href="#services">Services</a>
+        <a href="#contact">Contact</a>
+    </div>
+
+    <!-- Header -->
+    <header id="home">
+        <div class="container">
+            <h1>G-COACH</h1>
+            <p>Reliable Transportation Between Garissa and Nairobi</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Booking Section -->
+        <section class="section-card" id="booking">
+            <h2>Book Your Ticket</h2>
+            <form id="bookingForm">
+                <div class="form-group">
+                    <label for="from">From</label>
+                    <select id="from" required>
+                        <option value="">Select Origin</option>
+                        <option value="Garissa">Garissa</option>
+                        <option value="Nairobi">Nairobi</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="to">To</label>
+                    <select id="to" required>
+                        <option value="">Select Destination</option>
+                        <option value="Nairobi">Nairobi</option>
+                        <option value="Garissa">Garissa</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="date">Travel Date</label>
+                    <input type="date" id="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="passengers">Passengers</label>
+                    <select id="passengers" required>
+                        <option value="">Select Passengers</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Book Now</button>
+            </form>
+        </section>
+
+        <!-- Routes Section -->
+        <section class="section-card" id="routes">
+            <h2>Our Routes</h2>
+            <div class="routes-grid">
+                <div class="route-card">
+                    <h3>Garissa to Nairobi</h3>
+                    <p>Daily Departures</p>
+                    <ul>
+                        <li>Morning Departure: 6:00 AM</li>
+                        <li>Afternoon Departure: 12:00 PM</li>
+                        <li>Evening Departure: 6:00 PM</li>
+                    </ul>
+                    <p>Distance: 370 KM</p>
+                    <p>Estimated Travel Time: 5-6 Hours</p>
+                </div>
+                <div class="route-card">
+                    <h3>Nairobi to Garissa</h3>
+                    <p>Daily Departures</p>
+                    <ul>
+                        <li>Morning Departure: 7:00 AM</li>
+                        <li>Afternoon Departure: 1:00 PM</li>
+                        <li>Evening Departure: 7:00 PM</li>
+                    </ul>
+                    <p>Distance: 370 KM</p>
+                    <p>Estimated Travel Time: 5-6 Hours</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section class="section-card" id="services">
+            <h2>Our Services</h2>
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <i class="fas fa-bus"></i>
+                    <h3>Comfortable Coaches</h3>
+                    <p>Modern, well-maintained buses with comfortable seating</p>
+                </div>
+                <div class="benefit-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>Safety First</h3>
+                    <p>Professional drivers and strict safety protocols</p>
+                </div>
+                <div class="benefit-card">
+                    <i class="fas fa-clock"></i>
+                    <h3>Punctual Service</h3>
+                    <p>Reliable schedules and on-time departures</p>
+                </div>
+                <div class="benefit-card">
+                    <i class="fas fa-luggage-cart"></i>
+                    <h3>Parcel Services</h3>
+                    <p>Secure and affordable parcel transportation</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section class="section-card" id="contact">
+            <h2>Contact Us</h2>
+            <div class="contact-info">
+                <p>Phone: +254 700 123 456</p>
+                <p>Email: support@g-coach.com</p>
+                <p>Address: Garissa Bus Terminal, Kenya</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+     <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#bookings">Bookings</a></li>
+                        <li><a href="#benefits">Benefits</a></li>
+                        <li><a href="#support">Support</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Services</h3>
+                    <ul>
+                        <li><a href="#">Bus Booking</a></li>
+                        <li><a href="#">Parcel Services</a></li>
+                        <li><a href="#">Routes</a></li>
+                        <li><a href="#">Fleet</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Us</h3>
+                    <ul>
+                        <li>Email: support@gccoach.com</li>
+                        <li>Phone: +254 700 000 000</li>
+                        <li>Address: Garissa, Kenya</li>
+                        <li>Working Hours: 6 AM - 8 PM</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Follow Us</h3>
+                    <ul>
+                        <li><a href="#"><i class="fab fa-facebook"></i> Facebook</a></li>
+                        <li><a href="#"><i class="fab fa-twitter"></i> Twitter</a></li>
+                        <li><a href="#"><i class="fab fa-instagram"></i> Instagram</a></li>
+                        <li><a href="#"><i class="fab fa-linkedin"></i> LinkedIn</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                &copy; 2024 G Coach. All Rights Reserved.
+            </div>
+        </div>
+    </footer>
+    <!-- SweetAlert2 Script -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    
+    <!-- Main Application Script -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+    // Mobile Menu Toggle
+    const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+    const mobileMenu = document.querySelector('.mobile-menu');
+    
+    mobileMenuToggle.addEventListener('click', () => {
+        mobileMenu.style.display = mobileMenu.style.display === 'flex' ? 'none' : 'flex';
+        
+        // Toggle menu icon animation
+        mobileMenuToggle.classList.toggle('active');
+    });
+
+    // Close mobile menu when a link is clicked
+    document.querySelectorAll('.mobile-menu a').forEach(link => {
+        link.addEventListener('click', () => {
+            mobileMenu.style.display = 'none';
+            mobileMenuToggle.classList.remove('active');
+        });
+    });
+
+    // Booking Form Validation and Submission
+    const bookingForm = document.getElementById('bookingForm');
+    
+    bookingForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        // Get form values
+        const from = document.getElementById('from').value;
+        const to = document.getElementById('to').value;
+        const date = document.getElementById('date').value;
+        const passengers = document.getElementById('passengers').value;
+        
+        // Validation
+        if (!from || !to || !date || !passengers) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Incomplete Booking',
+                text: 'Please fill in all fields',
+                confirmButtonColor: '#2ecc71'
+            });
+            return;
+        }
+        
+        // Prevent booking to same location
+        if (from === to) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Route',
+                text: 'Origin and Destination cannot be the same',
+                confirmButtonColor: '#2ecc71'
+            });
+            return;
+        }
+        
+        // Validate date (must be future date)
+        const selectedDate = new Date(date);
+        const today = new Date();
+        
+        if (selectedDate < today) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Date',
+                text: 'Please select a future date',
+                confirmButtonColor: '#2ecc71'
+            });
+            return;
+        }
+        
+        // Simulate booking (replace with actual booking logic)
+        Swal.fire({
+            icon: 'success',
+            title: 'Booking Confirmed!',
+            html: `
+                <p><strong>Route:</strong> ${from} to ${to}</p>
+                <p><strong>Date:</strong> ${date}</p>
+                <p><strong>Passengers:</strong> ${passengers}</p>
+            `,
+            confirmButtonColor: '#2ecc71'
+        });
+        
+        // Reset form after successful booking
+        bookingForm.reset();
+    });
+
+    // Dynamic route selection
+    const fromSelect = document.getElementById('from');
+    const toSelect = document.getElementById('to');
+    
+    fromSelect.addEventListener('change', () => {
+        // Disable the currently selected from location in the to dropdown
+        const selectedFrom = fromSelect.value;
+        
+        Array.from(toSelect.options).forEach(option => {
+            option.disabled = option.value === selectedFrom;
+        });
+    });
+
+    // Smooth scrolling for navigation links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    });
+});
+
+// Price calculation (optional enhancement)
+function calculatePrice(from, to, passengers) {
+    // Base prices (this would typically come from a backend)
+    const basePrice = {
+        'Garissa-Nairobi': 1500,
+        'Nairobi-Garissa': 1500
+    };
+    
+    const route = `${from}-${to}`;
+    const baseTicketPrice = basePrice[route] || 1500;
+    
+    // Apply passenger count discount
+    const discount = passengers > 3 ? 0.9 : 1;
+    
+    return Math.round(baseTicketPrice * passengers * discount);
+}
+       </script>
+</body>
+</html>
