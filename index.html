@@ -1128,225 +1128,234 @@
 
     <script>
         // Dark mode toggle
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        const body = document.body;
+const darkModeToggle = document.getElementById('darkModeToggle');
+const body = document.body;
+
+// Check for saved theme preference
+if (localStorage.getItem('darkMode') === 'enabled') {
+    body.classList.add('dark-mode');
+    darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+}
+
+darkModeToggle.addEventListener('click', () => {
+    body.classList.toggle('dark-mode');
+    
+    if (body.classList.contains('dark-mode')) {
+        localStorage.setItem('darkMode', 'enabled');
+        darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+    } else {
+        localStorage.setItem('darkMode', 'disabled');
+        darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+    }
+});
+
+// Mobile menu functionality
+const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+const mobileMenuClose = document.getElementById('mobileMenuClose');
+const mobileMenu = document.getElementById('mobileMenu');
+const overlay = document.getElementById('overlay');
+
+mobileMenuToggle.addEventListener('click', () => {
+    mobileMenu.classList.add('active');
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+});
+
+function closeMenu() {
+    mobileMenu.classList.remove('active');
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+mobileMenuClose.addEventListener('click', closeMenu);
+overlay.addEventListener('click', closeMenu);
+
+// Paste button functionality
+const pasteBtn = document.getElementById('pasteBtn');
+const tiktokUrlInput = document.getElementById('tiktokUrl');
+
+pasteBtn.addEventListener('click', async () => {
+    try {
+        const text = await navigator.clipboard.readText();
+        tiktokUrlInput.value = text;
+    } catch (err) {
+        showToast('Permission to access clipboard denied', 'error');
+    }
+});
+
+// Toast notification
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toast.className = 'toast show';
+    if (type === 'error') {
+        toast.classList.add('error');
+        toast.querySelector('i').className = 'fas fa-exclamation-circle';
+    } else {
+        toast.classList.add('success');
+        toast.querySelector('i').className = 'fas fa-check-circle';
+    }
+    
+    toastMessage.textContent = message;
+    
+    setTimeout(() => {
+        toast.className = 'toast';
+    }, 3000);
+}
+
+// Segments toggle
+const segmentsToggle = document.getElementById('segmentsToggle');
+const segmentsList = document.getElementById('segmentsList');
+
+segmentsToggle.addEventListener('click', () => {
+    segmentsToggle.classList.toggle('active');
+    
+    if (segmentsList.style.display === 'block') {
+        segmentsList.style.display = 'none';
+        segmentsToggle.innerHTML = 'Show Segments <i class="fas fa-chevron-down"></i>';
+    } else {
+        segmentsList.style.display = 'block';
+        segmentsToggle.innerHTML = 'Hide Segments <i class="fas fa-chevron-down"></i>';
+    }
+});
+
+// Copy button
+const copyBtn = document.getElementById('copyBtn');
+const transcriptionText = document.getElementById('transcriptionText');
+
+copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(transcriptionText.textContent)
+        .then(() => {
+            showToast('Transcription copied to clipboard');
+        })
+        .catch(err => {
+            showToast('Failed to copy text', 'error');
+        });
+});
+
+// Transcribe button
+const transcribeBtn = document.getElementById('transcribeBtn');
+const resultsContainer = document.getElementById('resultsContainer');
+const errorContainer = document.getElementById('errorContainer');
+const errorMessage = document.getElementById('errorMessage');
+const processingTime = document.getElementById('processingTime');
+const wordCount = document.getElementById('wordCount');
+const segmentsContainer = document.getElementById('segmentsContainer');
+
+transcribeBtn.addEventListener('click', async () => {
+    const tiktokUrl = tiktokUrlInput.value.trim();
+    
+    if (!tiktokUrl) {
+        showToast('Please enter a TikTok URL', 'error');
+        return;
+    }
+    
+    // Show loading state
+    transcribeBtn.disabled = true;
+    transcribeBtn.innerHTML = '<span class="loading-spinner"></span> Transcribing...';
+    resultsContainer.style.display = 'none';
+    errorContainer.style.display = 'none';
+    
+    try {
+        const startTime = performance.now();
         
-        // Check for saved theme preference
-        if (localStorage.getItem('darkMode') === 'enabled') {
-            body.classList.add('dark-mode');
-            darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        // Make API request to the specified endpoint
+        const response = await fetch('https://bus-wehq.onrender.com', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url: tiktokUrl })
+        });
+        
+        // Check if the response is JSON before parsing
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            // If not JSON, get text and throw an error with details
+            const textResponse = await response.text();
+            throw new Error(`Server returned non-JSON response: ${textResponse.substring(0, 100)}...`);
         }
         
-        darkModeToggle.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
-            
-            if (body.classList.contains('dark-mode')) {
-                localStorage.setItem('darkMode', 'enabled');
-                darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-            } else {
-                localStorage.setItem('darkMode', 'disabled');
-                darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-            }
-        });
+        const data = await response.json();
         
-        // Mobile menu functionality
-        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-        const mobileMenuClose = document.getElementById('mobileMenuClose');
-        const mobileMenu = document.getElementById('mobileMenu');
-        const overlay = document.getElementById('overlay');
-        
-        mobileMenuToggle.addEventListener('click', () => {
-            mobileMenu.classList.add('active');
-            overlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        });
-        
-        function closeMenu() {
-            mobileMenu.classList.remove('active');
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to transcribe video');
         }
         
-        mobileMenuClose.addEventListener('click', closeMenu);
-        overlay.addEventListener('click', closeMenu);
+        const endTime = performance.now();
+        const elapsedTime = ((endTime - startTime) / 1000).toFixed(1);
         
-        // Paste button functionality
-        const pasteBtn = document.getElementById('pasteBtn');
-        const tiktokUrlInput = document.getElementById('tiktokUrl');
+        // Display results
+        transcriptionText.textContent = data.transcription;
+        processingTime.textContent = `Processing time: ${elapsedTime}s`;
         
-        pasteBtn.addEventListener('click', async () => {
-            try {
-                const text = await navigator.clipboard.readText();
-                tiktokUrlInput.value = text;
-            } catch (err) {
-                showToast('Permission to access clipboard denied', 'error');
-            }
-        });
+        // Count words
+        const words = data.transcription.trim().split(/\s+/).length;
+        wordCount.textContent = `Words: ${words}`;
         
-        // Toast notification
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
+        // Display segments if available
+        if (data.segments && data.segments.length > 0) {
+            segmentsContainer.style.display = 'block';
+            segmentsList.innerHTML = '';
             
-            toast.className = 'toast show';
-            if (type === 'error') {
-                toast.classList.add('error');
-                toast.querySelector('i').className = 'fas fa-exclamation-circle';
-            } else {
-                toast.classList.add('success');
-                toast.querySelector('i').className = 'fas fa-check-circle';
-            }
-            
-            toastMessage.textContent = message;
-            
-            setTimeout(() => {
-                toast.className = 'toast';
-            }, 3000);
+            data.segments.forEach(segment => {
+                const segmentItem = document.createElement('div');
+                segmentItem.className = 'segment-item';
+                
+                const startTime = formatTime(segment.start);
+                const endTime = formatTime(segment.end);
+                
+                segmentItem.innerHTML = `
+                    <span class="segment-time">[${startTime} - ${endTime}]</span>
+                    <span>${segment.text}</span>
+                `;
+                
+                segmentsList.appendChild(segmentItem);
+            });
+        } else {
+            segmentsContainer.style.display = 'none';
         }
         
-        // Segments toggle
-        const segmentsToggle = document.getElementById('segmentsToggle');
-        const segmentsList = document.getElementById('segmentsList');
+        resultsContainer.style.display = 'block';
         
-        segmentsToggle.addEventListener('click', () => {
-            segmentsToggle.classList.toggle('active');
-            
-            if (segmentsList.style.display === 'block') {
-                segmentsList.style.display = 'none';
-                segmentsToggle.innerHTML = 'Show Segments <i class="fas fa-chevron-down"></i>';
-            } else {
-                segmentsList.style.display = 'block';
-                segmentsToggle.innerHTML = 'Hide Segments <i class="fas fa-chevron-down"></i>';
-            }
-        });
-        
-        // Copy button
-        const copyBtn = document.getElementById('copyBtn');
-        const transcriptionText = document.getElementById('transcriptionText');
-        
-        copyBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(transcriptionText.textContent)
-                .then(() => {
-                    showToast('Transcription copied to clipboard');
-                })
-                .catch(err => {
-                    showToast('Failed to copy text', 'error');
-                });
-        });
-        
-        // Transcribe button
-        const transcribeBtn = document.getElementById('transcribeBtn');
-        const resultsContainer = document.getElementById('resultsContainer');
-        const errorContainer = document.getElementById('errorContainer');
-        const errorMessage = document.getElementById('errorMessage');
-        const processingTime = document.getElementById('processingTime');
-        const wordCount = document.getElementById('wordCount');
-        const segmentsContainer = document.getElementById('segmentsContainer');
-        
-        transcribeBtn.addEventListener('click', async () => {
-            const tiktokUrl = tiktokUrlInput.value.trim();
-            
-            if (!tiktokUrl) {
-                showToast('Please enter a TikTok URL', 'error');
-                return;
-            }
-            
-            // Show loading state
-            transcribeBtn.disabled = true;
-            transcribeBtn.innerHTML = '<span class="loading-spinner"></span> Transcribing...';
-            resultsContainer.style.display = 'none';
-            errorContainer.style.display = 'none';
-            
-            try {
-                const startTime = performance.now();
-                
-                // Make API request to the specified endpoint
-                const response = await fetch('https://bus-wehq.onrender.com', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ url: tiktokUrl })
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.message || 'Failed to transcribe video');
-                }
-                
-                const endTime = performance.now();
-                const elapsedTime = ((endTime - startTime) / 1000).toFixed(1);
-                
-                // Display results
-                transcriptionText.textContent = data.transcription;
-                processingTime.textContent = `Processing time: ${elapsedTime}s`;
-                
-                // Count words
-                const words = data.transcription.trim().split(/\s+/).length;
-                wordCount.textContent = `Words: ${words}`;
-                
-                // Display segments if available
-                if (data.segments && data.segments.length > 0) {
-                    segmentsContainer.style.display = 'block';
-                    segmentsList.innerHTML = '';
-                    
-                    data.segments.forEach(segment => {
-                        const segmentItem = document.createElement('div');
-                        segmentItem.className = 'segment-item';
-                        
-                        const startTime = formatTime(segment.start);
-                        const endTime = formatTime(segment.end);
-                        
-                        segmentItem.innerHTML = `
-                            <span class="segment-time">[${startTime} - ${endTime}]</span>
-                            <span>${segment.text}</span>
-                        `;
-                        
-                        segmentsList.appendChild(segmentItem);
-                    });
-                } else {
-                    segmentsContainer.style.display = 'none';
-                }
-                
-                resultsContainer.style.display = 'block';
-                
-            } catch (error) {
-                errorMessage.textContent = error.message || 'An error occurred while transcribing the video';
-                errorContainer.style.display = 'block';
-                showToast('Transcription failed', 'error');
-            } finally {
-                // Reset button state
-                transcribeBtn.disabled = false;
-                transcribeBtn.innerHTML = 'Transcribe TikTok';
-            }
-        });
-        
-        // Format time (seconds to MM:SS)
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
-        
-        // File upload handling
-        const videoFileInput = document.getElementById('videoFile');
-        
-        videoFileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            
-            if (!file) return;
-            
-            if (file.size > 50 * 1024 * 1024) { // 50MB limit
-                showToast('File is too large. Maximum size is 50MB', 'error');
-                videoFileInput.value = '';
-                return;
-            }
-            
-            // Here you would implement file upload functionality
-            // For now, just show a message
-            showToast('File upload functionality coming soon');
-        });
+    } catch (error) {
+        errorMessage.textContent = error.message || 'An error occurred while transcribing the video';
+        errorContainer.style.display = 'block';
+        showToast('Transcription failed', 'error');
+        console.error('Transcription error:', error);
+    } finally {
+        // Reset button state
+        transcribeBtn.disabled = false;
+        transcribeBtn.innerHTML = 'Transcribe TikTok';
+    }
+});
+
+// Format time (seconds to MM:SS)
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+// File upload handling
+const videoFileInput = document.getElementById('videoFile');
+
+videoFileInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    
+    if (!file) return;
+    
+    if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        showToast('File is too large. Maximum size is 50MB', 'error');
+        videoFileInput.value = '';
+        return;
+    }
+    
+    // Here you would implement file upload functionality
+    // For now, just show a message
+    showToast('File upload functionality coming soon');
+});
     </script>
 </body>
 </html>
