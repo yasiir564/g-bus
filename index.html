@@ -1260,13 +1260,13 @@ transcribeBtn.addEventListener('click', async () => {
     try {
         const startTime = performance.now();
         
-        // Make API request to the specified endpoint
-        const response = await fetch('https://bus-wehq.onrender.com', {
-            method: 'POST',
+        // Make API request to the specified endpoint - changed to GET request with URL parameter
+        const encodedUrl = encodeURIComponent(tiktokUrl);
+        const response = await fetch(`https://bus-wehq.onrender.com/transcribe?url=${encodedUrl}`, {
+            method: 'GET', // Changed from POST to GET
             headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ url: tiktokUrl })
+                'Accept': 'application/json'
+            }
         });
         
         // Check if the response is JSON before parsing
