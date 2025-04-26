@@ -1261,7 +1261,7 @@ transcribeBtn.addEventListener('click', async () => {
         const startTime = performance.now();
         
         // Make API request to the correct endpoint based on the server code
-        const response = await fetch('http://10.108.138.97:5000/api/transcribe', {
+        const response = await fetch(' http://127.0.0.1:5000/api/transcribe', {
             method: 'POST', // Using POST as required by the server
             headers: {
                 'Content-Type': 'application/json',
