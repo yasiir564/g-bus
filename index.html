@@ -3,292 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Whisper Video Transcription</title>
+    <title>TikTok Video Downloader</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            line-height: 1.6;
+            text-align: center;
+            background-color: #f5f5f5;
         }
         .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #FF0050; /* TikTok brand color */
+            margin-bottom: 30px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
             border: 1px solid #ddd;
             border-radius: 5px;
-            padding: 20px;
-            margin-bottom: 20px;
+            font-size: 16px;
+            box-sizing: border-box;
         }
         button {
-            background-color: #4CAF50;
+            background-color: #FF0050;
             color: white;
-            padding: 10px 15px;
             border: none;
-            border-radius: 4px;
-            cursor: pointer;
+            padding: 12px 25px;
             font-size: 16px;
-            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
         button:hover {
-            background-color: #45a049;
+            background-color: #e00046;
         }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        progress {
-            width: 100%;
-            margin-top: 10px;
-        }
-        #fileInput {
-            margin-bottom: 10px;
-        }
-        #transcriptionResult {
-            white-space: pre-wrap;
-            background-color: #f9f9f9;
+        #result {
+            margin-top: 20px;
             padding: 15px;
             border-radius: 5px;
-            border: 1px solid #ddd;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .hidden {
             display: none;
         }
-        #errorMessage {
-            color: red;
-            font-weight: bold;
+        .success {
+            background-color: #d4edda;
+            color: #155724;
         }
-        .timestamp {
-            color: #666;
-            font-size: 0.9em;
-            margin-right: 10px;
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #FF0050;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <h1>Video Transcription Tool</h1>
-    
     <div class="container">
-        <h2>Upload Video or Audio</h2>
-        <p>Select a video or audio file to transcribe using Whisper AI.</p>
-        <p><small>Supported formats: MP4, AVI, MOV, MKV, WEBM, MP3, WAV, M4A</small></p>
-        <p><small>Maximum file size: 100MB</small></p>
+        <h1>TikTok Video Downloader</h1>
+        <p>Download TikTok videos without watermark</p>
         
-        <input type="file" id="fileInput" accept=".mp4,.avi,.mov,.mkv,.webm,.mp3,.wav,.m4a">
-        <button id="uploadBtn">Transcribe</button>
+        <input type="text" id="tiktokUrl" placeholder="Paste TikTok video URL here...">
+        <button onclick="downloadVideo()">Download</button>
         
-        <div id="progressContainer" class="hidden">
-            <p>Transcribing... (this may take a few minutes)</p>
-            <progress id="progressBar" value="0" max="100"></progress>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing your video...</p>
         </div>
         
-        <p id="errorMessage" class="hidden"></p>
-    </div>
-    
-    <div id="resultContainer" class="hidden">
-        <h2>Transcription Result</h2>
-        <button id="copyBtn">Copy to Clipboard</button>
-        <button id="downloadBtn">Download as TXT</button>
-        <div id="transcriptionResult"></div>
-        
-        <h3>Segments with Timestamps</h3>
-        <div id="segmentsContainer"></div>
+        <div id="result"></div>
     </div>
 
     <script>
-        // Constants
-        const API_ENDPOINT = 'https://bus-wehq.onrender.com/transcribe';
-        
-        // DOM Elements
-        const fileInput = document.getElementById('fileInput');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        const resultContainer = document.getElementById('resultContainer');
-        const transcriptionResult = document.getElementById('transcriptionResult');
-        const segmentsContainer = document.getElementById('segmentsContainer');
-        const errorMessage = document.getElementById('errorMessage');
-        const copyBtn = document.getElementById('copyBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
-        
-        // Simulated progress (since we don't get real-time progress from the API)
-        let progressInterval;
-        
-        // Check API status on page load
-        checkApiStatus();
-        
-        // Event Listeners
-        uploadBtn.addEventListener('click', handleTranscription);
-        copyBtn.addEventListener('click', copyToClipboard);
-        downloadBtn.addEventListener('click', downloadTranscription);
-        
-        // Check if the API is available
-        function checkApiStatus() {
-            fetch('https://bus-wehq.onrender.com/ping')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('API is not available');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('API Status:', data);
-                })
-                .catch(error => {
-                    showError('API is not available. Please try again later.');
-                    uploadBtn.disabled = true;
-                });
-        }
-        
-        // Handle the transcription process
-        function handleTranscription() {
+        function downloadVideo() {
+            const url = document.getElementById('tiktokUrl').value.trim();
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+            
             // Reset UI
-            hideError();
-            resultContainer.classList.add('hidden');
+            resultDiv.style.display = 'none';
+            loadingDiv.style.display = 'block';
             
-            // Validate file
-            if (!fileInput.files || fileInput.files.length === 0) {
-                showError('Please select a file.');
+            // Validate URL
+            if (!url) {
+                showResult('Please enter a TikTok URL', 'error');
                 return;
             }
             
-            const file = fileInput.files[0];
-            
-            // Validate file size (100MB max)
-            if (file.size > 100 * 1024 * 1024) {
-                showError('File size exceeds 100MB limit.');
+            if (!isValidTikTokUrl(url)) {
+                showResult('Please enter a valid TikTok URL', 'error');
                 return;
             }
             
-            // Start upload and transcription
-            uploadBtn.disabled = true;
-            progressContainer.classList.remove('hidden');
-            startProgressSimulation();
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            fetch(API_ENDPOINT, {
+            // Make API request
+            fetch('https://bus-wehq.onrender.com/api/download', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: url })
             })
             .then(response => {
-                clearInterval(progressInterval);
-                progressBar.value = 100;
-                
                 if (!response.ok) {
-                    return response.json().then(err => {
-                        throw new Error(err.error || 'Transcription failed');
-                    });
+                    return response.json().then(err => { throw err; });
                 }
-                return response.json();
+                return response.blob();
             })
-            .then(data => {
-                displayResults(data);
-                progressContainer.classList.add('hidden');
-                uploadBtn.disabled = false;
+            .then(blob => {
+                // Create download link
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `tiktok_video_${Date.now()}.mp4`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(downloadUrl);
+                
+                showResult('Video downloaded successfully!', 'success');
             })
             .catch(error => {
-                progressContainer.classList.add('hidden');
-                showError(error.message || 'An error occurred during transcription.');
-                uploadBtn.disabled = false;
+                const errorMsg = error.error || 'Failed to download video';
+                showResult(errorMsg, 'error');
+            })
+            .finally(() => {
+                loadingDiv.style.display = 'none';
             });
         }
         
-        // Display the transcription results
-        function displayResults(data) {
-            // Display full transcription
-            transcriptionResult.textContent = data.transcription;
-            
-            // Display segments with timestamps
-            segmentsContainer.innerHTML = '';
-            if (data.segments && data.segments.length > 0) {
-                data.segments.forEach(segment => {
-                    const segmentDiv = document.createElement('div');
-                    const startTime = formatTime(segment.start);
-                    const endTime = formatTime(segment.end);
-                    
-                    segmentDiv.innerHTML = `
-                        <span class="timestamp">[${startTime} - ${endTime}]</span>
-                        <span>${segment.text}</span>
-                    `;
-                    segmentsContainer.appendChild(segmentDiv);
-                });
-            }
-            
-            resultContainer.classList.remove('hidden');
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = type;
+            resultDiv.style.display = 'block';
         }
         
-        // Format seconds to MM:SS format
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = Math.floor(seconds % 60);
-            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-        }
-        
-        // Simulate progress since we don't get real-time updates
-        function startProgressSimulation() {
-            let progress = 0;
-            progressBar.value = progress;
-            
-            progressInterval = setInterval(() => {
-                // Simulate slower progress toward the end
-                if (progress < 70) {
-                    progress += 5;
-                } else if (progress < 90) {
-                    progress += 1;
-                } else if (progress < 95) {
-                    progress += 0.5;
-                }
-                
-                if (progress > 95) {
-                    clearInterval(progressInterval);
-                }
-                
-                progressBar.value = progress;
-            }, 1000);
-        }
-        
-        // Copy transcription to clipboard
-        function copyToClipboard() {
-            navigator.clipboard.writeText(transcriptionResult.textContent)
-                .then(() => {
-                    const originalText = copyBtn.textContent;
-                    copyBtn.textContent = 'Copied!';
-                    setTimeout(() => {
-                        copyBtn.textContent = originalText;
-                    }, 2000);
-                })
-                .catch(err => {
-                    showError('Failed to copy to clipboard');
-                });
-        }
-        
-        // Download transcription as text file
-        function downloadTranscription() {
-            const fileName = 'transcription.txt';
-            const text = transcriptionResult.textContent;
-            
-            const element = document.createElement('a');
-            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-            element.setAttribute('download', fileName);
-            element.style.display = 'none';
-            
-            document.body.appendChild(element);
-            element.click();
-            document.body.removeChild(element);
-        }
-        
-        // Show error message
-        function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.classList.remove('hidden');
-        }
-        
-        // Hide error message
-        function hideError() {
-            errorMessage.textContent = '';
-            errorMessage.classList.add('hidden');
+        function isValidTikTokUrl(url) {
+            // Simple TikTok URL validation
+            const tiktokDomains = [
+                'tiktok.com',
+                'www.tiktok.com',
+                'vm.tiktok.com',
+                'vt.tiktok.com',
+                'm.tiktok.com'
+            ];
+            return tiktokDomains.some(domain => url.includes(domain));
         }
     </script>
 </body>
