@@ -280,6 +280,7 @@
         <div class="loading-spinner" id="loadingSpinner">
             <div class="spinner"></div>
             <p>Processing your request. This may take a moment...</p>
+            <p style="font-size: 0.9rem; color: #666; margin-top: 0.5rem;">Note: TikTok processing can take up to 30 seconds for larger videos</p>
         </div>
         
         <div class="result" id="resultContainer">
@@ -295,9 +296,19 @@
                 <li>Copy the link of the TikTok video you want to download</li>
                 <li>Paste the TikTok URL in the input field above</li>
                 <li>Click "Download Without Watermark" button</li>
-                <li>Wait for processing to complete</li>
+                <li>Wait for processing to complete (may take up to 30 seconds)</li>
                 <li>Click the download button to save your watermark-free video</li>
             </ol>
+            
+            <div style="margin-top: 2rem; padding: 1rem; background-color: #f8f8f8; border-radius: 0.5rem; border-left: 4px solid var(--secondary-color);">
+                <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;">Troubleshooting Tips</h3>
+                <ul style="list-style-type: disc; padding-left: 1.5rem;">
+                    <li>Make sure you're using a valid TikTok link (e.g., https://www.tiktok.com/@username/video/1234567890123456789)</li>
+                    <li>If you get an error, try refreshing the page and attempting again</li>
+                    <li>Some TikTok videos may be private or not available for download</li>
+                    <li>If one method fails, try using the "Get Info" button first, then download</li>
+                </ul>
+            </div>
         </div>
         
         <footer>
@@ -320,7 +331,8 @@
             
             // Function to validate TikTok URL
             function validateTikTokUrl(url) {
-                const regex = /^(https?:\/\/)?(www\.|vm\.)?tiktok\.com\/.+/;
+                // More comprehensive regex for TikTok URLs
+                const regex = /^(https?:\/\/)?(www\.|vm\.|vt\.)?tiktok\.com\/(@[a-zA-Z0-9_\.-]+\/video\/\d+|[a-zA-Z0-9]+\/?|v\/[a-zA-Z0-9]+\/?|t\/[a-zA-Z0-9]+\/?)/;
                 return regex.test(url);
             }
             
@@ -331,15 +343,32 @@
                 loadingSpinner.style.display = 'none';
                 resultContainer.style.display = 'none';
                 
-                // Hide error after 5 seconds
+                // Hide error after 8 seconds
                 setTimeout(() => {
                     errorMessage.style.display = 'none';
-                }, 5000);
+                }, 8000);
+            }
+            
+            // Function to clean TikTok URL
+            function cleanTikTokUrl(url) {
+                // Make sure URL has proper protocol
+                if (!url.startsWith('http')) {
+                    url = 'https://' + url;
+                }
+                
+                // Handle shortened URLs
+                if (url.includes('vm.tiktok.com') || url.includes('vt.tiktok.com')) {
+                    return url; // The backend will handle the redirection
+                }
+                
+                // Remove query parameters if present
+                const urlObj = new URL(url);
+                return `${urlObj.origin}${urlObj.pathname}`;
             }
             
             // Function to handle download button click
             downloadBtn.addEventListener('click', async function() {
-                const tiktokUrl = tiktokUrlInput.value.trim();
+                let tiktokUrl = tiktokUrlInput.value.trim();
                 
                 // Validate input
                 if (!tiktokUrl) {
@@ -352,12 +381,32 @@
                     return;
                 }
                 
+                // Clean URL
+                try {
+                    tiktokUrl = cleanTikTokUrl(tiktokUrl);
+                } catch (e) {
+                    console.error('Error cleaning URL:', e);
+                    // Continue with original URL if cleaning fails
+                }
+                
                 // Show loading spinner
                 errorMessage.style.display = 'none';
                 loadingSpinner.style.display = 'block';
                 resultContainer.style.display = 'none';
                 
                 try {
+                    // Show extended loading message
+                    setTimeout(() => {
+                        if (loadingSpinner.style.display === 'block') {
+                            document.querySelector('#loadingSpinner p').textContent = 
+                                'Processing your request. This may take up to 30 seconds for longer videos...';
+                        }
+                    }, 5000);
+                    
+                    // Add timeout to fetch to prevent hanging forever
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+                    
                     // Start the download process
                     const response = await fetch(`${API_BASE_URL}/api/download`, {
                         method: 'POST',
@@ -365,22 +414,37 @@
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({ url: tiktokUrl }),
+                        signal: controller.signal
                     });
+                    
+                    clearTimeout(timeoutId);
                     
                     // Check if response is OK
                     if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || 'Failed to download content');
+                        let errorMsg = 'Failed to download content';
+                        try {
+                            const errorData = await response.json();
+                            errorMsg = errorData.error || errorMsg;
+                        } catch (e) {
+                            // If parsing JSON fails, use text response
+                            errorMsg = await response.text() || errorMsg;
+                        }
+                        throw new Error(errorMsg);
                     }
                     
                     // Get the file blob
                     const blob = await response.blob();
                     
+                    // Check if blob is empty or too small (indicating an error)
+                    if (blob.size < 100) { // Arbitrary small size
+                        throw new Error('The server returned an empty or invalid response');
+                    }
+                    
                     // Create object URL
                     const url = window.URL.createObjectURL(blob);
                     
                     // Determine file type and name
-                    const contentType = response.headers.get('Content-Type');
+                    const contentType = response.headers.get('Content-Type') || 'video/mp4';
                     let fileName = 'tiktok_download';
                     let fileExtension = 'mp4';
                     
@@ -393,6 +457,11 @@
                         }
                     } else if (contentType.includes('image')) {
                         fileExtension = 'jpg';
+                    }
+                    
+                    // If no file extension in the filename, add one
+                    if (!fileName.includes('.')) {
+                        fileName += '.' + fileExtension;
                     }
                     
                     // Hide loading spinner
@@ -431,13 +500,20 @@
                     resultContainer.scrollIntoView({ behavior: 'smooth' });
                     
                 } catch (error) {
-                    showError(error.message || 'An error occurred while processing your request');
+                    console.error('Download error:', error);
+                    
+                    // Check if it's an abort error
+                    if (error.name === 'AbortError') {
+                        showError('The request timed out. The server may be busy or the video may be too large.');
+                    } else {
+                        showError(error.message || 'An error occurred while processing your request. Please try again or try a different TikTok link.');
+                    }
                 }
             });
             
-            // Function to handle get info button click
+            // Function to handle get info button click with improved error handling
             getInfoBtn.addEventListener('click', async function() {
-                const tiktokUrl = tiktokUrlInput.value.trim();
+                let tiktokUrl = tiktokUrlInput.value.trim();
                 
                 // Validate input
                 if (!tiktokUrl) {
@@ -450,12 +526,24 @@
                     return;
                 }
                 
+                // Clean URL
+                try {
+                    tiktokUrl = cleanTikTokUrl(tiktokUrl);
+                } catch (e) {
+                    console.error('Error cleaning URL:', e);
+                    // Continue with original URL if cleaning fails
+                }
+                
                 // Show loading spinner
                 errorMessage.style.display = 'none';
                 loadingSpinner.style.display = 'block';
                 resultContainer.style.display = 'none';
                 
                 try {
+                    // Add timeout to fetch
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+                    
                     // Get info about the TikTok
                     const response = await fetch(`${API_BASE_URL}/api/info`, {
                         method: 'POST',
@@ -463,16 +551,35 @@
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({ url: tiktokUrl }),
+                        signal: controller.signal
                     });
+                    
+                    clearTimeout(timeoutId);
                     
                     // Check if response is OK
                     if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || 'Failed to get info');
+                        let errorMsg = 'Failed to get information';
+                        try {
+                            const errorData = await response.json();
+                            errorMsg = errorData.error || errorMsg;
+                        } catch (e) {
+                            // If parsing JSON fails, use text response
+                            errorMsg = await response.text() || errorMsg;
+                        }
+                        throw new Error(errorMsg);
                     }
                     
                     // Parse response
-                    const data = await response.json();
+                    let data;
+                    try {
+                        data = await response.json();
+                    } catch (e) {
+                        throw new Error('The server returned an invalid response. Please try again.');
+                    }
+                    
+                    if (!data || !data.id) {
+                        throw new Error('Could not get information about this TikTok link.');
+                    }
                     
                     // Hide loading spinner
                     loadingSpinner.style.display = 'none';
@@ -482,7 +589,7 @@
                     resultInfo.innerHTML = `
                         <strong>TikTok ID:</strong> ${data.id}<br>
                         <strong>Content Type:</strong> ${data.content_type === 'video' ? 'Video' : 'Image/Slideshow'}<br><br>
-                        Click the download button above to download this content without watermark.
+                        Click the download button below to download this content without watermark.
                     `;
                     
                     // Clear previous preview and download link
@@ -497,13 +604,36 @@
                     resultContainer.scrollIntoView({ behavior: 'smooth' });
                     
                 } catch (error) {
-                    showError(error.message || 'An error occurred while processing your request');
+                    console.error('Get info error:', error);
+                    
+                    // Check if it's an abort error
+                    if (error.name === 'AbortError') {
+                        showError('The request timed out. The server may be busy.');
+                    } else {
+                        showError(error.message || 'Failed to get information about this TikTok. Try downloading directly.');
+                        
+                        // Show fallback option to try direct download
+                        setTimeout(() => {
+                            if (confirm('Info request failed. Would you like to try downloading directly?')) {
+                                downloadBtn.click();
+                            }
+                        }, 1000);
+                    }
                 }
             });
             
             // Allow pressing Enter to submit
             tiktokUrlInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
+                    downloadBtn.click();
+                }
+            });
+            
+            // Add example link functionality
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('example-link')) {
+                    e.preventDefault();
+                    tiktokUrlInput.value = e.target.getAttribute('data-url');
                     downloadBtn.click();
                 }
             });
